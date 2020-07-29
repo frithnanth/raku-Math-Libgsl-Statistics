@@ -1,0 +1,133 @@
+#!/usr/bin/env perl6
+
+use Test;
+use lib 'lib';
+use Math::Libgsl::Statistics::Num32;
+
+subtest 'mean, standard deviation and variance' => {
+  my @data = ^10;
+  my $mean = mean(@data);
+  ok $mean == 4.5, 'mean';
+  ok mean(@data, :2stride) == 4, 'mean with stride';
+  is-approx variance(@data), 9.166666666666668, :rel-tol(10⁻⁶), 'variance';
+  is-approx variance-m(@data, 4.5), 9.166666666666668, :rel-tol(10⁻⁶), 'variance with given mean';
+  is-approx sd(@data), 3.0276503540974917, :rel-tol(10⁻⁶), 'standard deviation';
+  is-approx sd-m(@data, $mean), 3.0276503540974917, :rel-tol(10⁻⁶), 'standard deviation with given mean';
+  is-approx tss(@data), 82.5, :rel-tol(10⁻⁶), 'total sum of squares';
+  is-approx tss-m(@data, $mean), 82.5, :rel-tol(10⁻⁶), 'total sum of squares with given mean';
+  ok variance-with-fixed-mean(@data, $mean) == 8.25, 'unbiased estimate of the variance';
+  is-approx sd-with-fixed-mean(@data, $mean), 2.8722813232690143, :rel-tol(10⁻⁶), 'standard deviation for a fixed population mean';
+}
+
+subtest 'absolute deviation' => {
+  my @data = ^10;
+  my $mean = mean(@data);
+  ok absdev(@data) == 2.5, 'absolute deviation from the mean';
+  ok absdev-m(@data, $mean) == 2.5, 'absolute deviation relative to the given mean';
+}
+
+subtest 'higher moments' => {
+  my @data = ^10;
+  my $mean = mean(@data);
+  my $sd   = sd(@data);
+  is-approx skew(@data), 5.421010862427522e-20, :rel-tol(10⁻⁶), 'skew';
+  is-approx skew-m-sd(@data, $mean, $sd), 5.421010862427522e-20, :rel-tol(10⁻⁶), 'skew with given mean and sd';
+  is-approx kurtosis(@data), -1.561636363636364, :rel-tol(10⁻⁶), 'kurtosis';
+  is-approx kurtosis-m-sd(@data, $mean, $sd), -1.561636363636364, :rel-tol(10⁻⁶), 'kurtosis with given mean and sd';
+}
+
+subtest 'autocorrelation' => {
+  my @data = ^10;
+  my $mean = mean(@data);
+  ok autocorrelation(@data) == .7, 'autocorrelation';
+  ok autocorrelation-m(@data, $mean) == .7, 'autocorrelation with given mean';
+}
+
+subtest 'covariance' => {
+  my @data1 = ^10;
+  my $mean1 = mean(@data1);
+  my @data2 = ^10;
+  @data2[3] = 4e0;
+  my $mean2 = mean(@data2);
+  ok covariance(@data1, @data2) == 9, 'covariance';
+  ok covariance(@data1, @data2, :9n) == 7.375, 'covariance with limited length';
+  @data2[10] = 10;
+  throws-like { covariance(@data1, @data2) }, X::TypeCheck::Binding::Parameter, 'arrays of different length';
+  @data2.pop;
+  ok covariance-m(@data1, @data2, $mean1, $mean2) == 9, 'covariance with given mean';
+}
+
+subtest 'correlation' => {
+  my @data1 = ^10;
+  my @data2 = ^10;
+  @data2[3] = 4;
+  is-approx correlation(@data1, @data2), 0.9945577827230723, :rel-tol(10⁻⁶), 'Pearson correlation';
+  is-approx spearman(@data1, @data2), 0.9969650916353059, :rel-tol(10⁻⁶), 'Spearman rank correlation';
+}
+
+subtest 'weighted samples' => {
+  my @weights = .0000, .0000, .0000, 3.000, .0000, 1.000, 1.000, 1.000, 0.000, .5000, 7.000, 5.000, 4.000, 0.123;
+  my @data = .0421, .0941, .1064, .0242, .1331, .0773, .0243, .0815, .1186, .0356, .0728, .0999, .0614, .0479;
+
+  my $wmean = wmean(@weights, @data);
+  is-approx $wmean, 0.06781115312132734, :rel-tol(10⁻⁶), 'weighted mean';
+  is-approx wvariance(@weights, @data), 0.0007695629749029831, :rel-tol(10⁻⁶), 'weighted variance';
+  is-approx wvariance-m(@weights, @data, $wmean), 0.0007695629749029831, :rel-tol(10⁻⁶), 'weighted variance with given mean';
+  my $wsd = wsd(@weights, @data);
+  is-approx $wsd, 0.027740998087721774, :rel-tol(10⁻⁶), 'weighted standard deviation';
+  is-approx wsd-m(@weights, @data, $wmean), 0.027740998087721774, :rel-tol(10⁻⁶), 'weighted standard deviation with given mean';
+  is-approx wvariance-with-fixed-mean(@weights, @data, $wmean), 0.0006157930705598824, :rel-tol(10⁻⁶), 'weighted unbiased estimate of variance';
+  is-approx wsd-with-fixed-mean(@weights, @data, $wmean), 0.02481517822946034, :rel-tol(10⁻⁶), 'weighted unbiased estimate of standard deviation';
+  is-approx wtss(@weights, @data), 0.013931086637368353, :rel-tol(10⁻⁶), 'weighted total sum of squares';
+  is-approx wtss-m(@weights, @data, $wmean), 0.013931086637368353, :rel-tol(10⁻⁶), 'weighted total sum of squares with given mean';
+  is-approx wabsdev(@weights, @data), 0.01932050344009108, :rel-tol(10⁻⁶), 'weighted absolute deviation';
+  is-approx wabsdev-m(@weights, @data, $wmean), 0.01932050344009108, :rel-tol(10⁻⁶), 'weighted absolute deviation with given mean';
+  is-approx wskew(@weights, @data), -0.3736310715244507, :rel-tol(10⁻⁶), 'weighted skew';
+  is-approx wskew-m-sd(@weights, @data, $wmean, $wsd), -0.3736310715244507, :rel-tol(10⁻⁶), 'weighted skew with given mean and standard deviation';
+  is-approx wkurtosis(@weights, @data), -1.4811423277468934, :rel-tol(10⁻⁶), 'weighted kurtosis';
+  is-approx wkurtosis-m-sd(@weights, @data, $wmean, $wsd), -1.4811423277468934, :rel-tol(10⁻⁶), 'weighted kurtosis with given mean and standard deviation';
+}
+
+subtest 'maximum and minimum values' => {
+  my @data = ^10;
+  ok smax(@data) == 9, 'smax';
+  ok smin(@data) == 0, 'smin';
+  my ($min, $max) = sminmax(@data);
+  ok $min == 0 && $max == 9, 'sminmax';
+  ok smax-index(@data) == 9, 'index of max element';
+  ok smin-index(@data) == 0, 'index of min element';
+  my ($min-index, $max-index) = sminmax-index(@data);
+  ok $min-index == 0 && $max-index == 9, 'index of minmax elements';
+}
+
+subtest 'median and percentiles' => {
+  my @data = ^10;
+  ok median-from-sorted-data(@data) == 4.5, 'median from sorted data';
+  ok median(@data) == 4.5, 'median';
+  ok quantile-from-sorted-data(@data, .2) == 1.8, 'quantile from sorted data';
+  (@data[0], @data[1]) = (@data[1], @data[0]);
+  throws-like { median-from-sorted-data(@data) }, X::TypeCheck::Binding::Parameter, 'non-sorted data';
+}
+
+subtest 'order statistics' => {
+  my @data = ^10;
+  ok select(@data, 3) == 3, 'k-th smallest element';
+}
+
+subtest 'robust location estimates' => {
+  my @data = ^10;
+  ok trmean-from-sorted-data(.2, @data) == 4.5, 'trimmed mean of sorted data';
+  ok gastwirth-from-sorted-data(@data) == 4.5, 'Gastwirth location estimator of sorted data';
+}
+
+subtest 'robust scale estimates' => {
+  my @data = ^10;
+  ok mad0(@data) == 2.5, 'median absolute deviation without bias correction';
+  is-approx mad(@data), 3.706505546264005, :rel-tol(10⁻⁶), 'median absolute deviation with bias correction';
+  ok Sn0-from-sorted-data(@data) == 3, 'Sₙ statistic without bias correction';
+  is-approx Sn-from-sorted-data(@data), 3.5778000000000003, :rel-tol(10⁻⁶), 'Sₙ statistic with bias correction';
+  ok Qn0-from-sorted-data(@data) == 2, 'Qₙ statistic without bias correction';
+  is-approx Qn-from-sorted-data(@data), 3.1961829591999997, :rel-tol(10⁻⁶), 'Qₙ statistic with bias correction';
+}
+
+done-testing;

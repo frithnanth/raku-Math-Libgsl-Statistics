@@ -1,0 +1,111 @@
+#!/usr/bin/env perl6
+
+use Test;
+use NativeCall;
+use lib 'lib';
+use Math::Libgsl::Raw::Statistics::Int8 :ALL;
+
+subtest 'mean, standard deviation and variance' => {
+  my CArray[int8] $data .= new: ^10;
+  my num64 $mean = gsl_stats_char_mean($data, 1, 10);
+  ok $mean == 4.5, 'mean';
+  is-approx gsl_stats_char_variance($data, 1, 10), 9.166666666666668, :rel-tol(10⁻¹²), 'variance';
+  is-approx gsl_stats_char_variance_m($data, 1, 10, $mean), 9.166666666666668, :rel-tol(10⁻¹²), 'variance with mean';
+  is-approx gsl_stats_char_sd($data, 1, 10), 3.0276503540974917, :rel-tol(10⁻¹²), 'standard deviation';
+  is-approx gsl_stats_char_sd_m($data, 1, 10, $mean), 3.0276503540974917, :rel-tol(10⁻¹²), 'standard deviation with mean';
+  ok gsl_stats_char_tss($data, 1, 10) == 82.5, 'total sum of squares';
+  ok gsl_stats_char_tss_m($data, 1, 10, $mean) == 82.5, 'total sum of squares with mean';
+  ok gsl_stats_char_variance_with_fixed_mean($data, 1, 10, $mean) == 8.25, 'unbiased estimate of the variance';
+  is-approx gsl_stats_char_sd_with_fixed_mean($data, 1, 10, $mean), 2.8722813232690143, :rel-tol(10⁻¹²), 'standard deviationfor a fixed population mean';
+}
+
+subtest 'absolute deviation' => {
+  my CArray[int8] $data .= new: ^10;
+  my num64 $mean = gsl_stats_char_mean($data, 1, 10);
+  ok gsl_stats_char_absdev($data, 1, 10) == 2.5, 'absolute deviation from the mean';
+  ok gsl_stats_char_absdev_m($data, 1, 10, $mean) == 2.5, 'absolute deviation relative to the given mean';
+}
+
+subtest 'higher moments' => {
+  my CArray[int8] $data .= new: ^10;
+  my num64 $mean = gsl_stats_char_mean($data, 1, 10);
+  my num64 $sd   = gsl_stats_char_sd($data, 1, 10);
+  is-approx gsl_stats_char_skew($data, 1, 10), 5.421010862427522e-20, :rel-tol(10⁻¹²), 'skew';
+  is-approx gsl_stats_char_skew_m_sd($data, 1, 10, $mean, $sd), 5.421010862427522e-20, :rel-tol(10⁻¹²), 'skew with mean and sd';
+  is-approx gsl_stats_char_kurtosis($data, 1, 10), -1.561636363636364, :rel-tol(10⁻¹²), 'kurtosis';
+  is-approx gsl_stats_char_kurtosis_m_sd($data, 1, 10, $mean, $sd), -1.561636363636364, :rel-tol(10⁻¹²), 'kurtosis with mean and sd';
+}
+
+subtest 'autocorrelation' => {
+  my CArray[int8] $data .= new: ^10;
+  my num64 $mean = gsl_stats_char_mean($data, 1, 10);
+  ok gsl_stats_char_lag1_autocorrelation($data, 1, 10) == .7, 'autocorrelation';
+  ok gsl_stats_char_lag1_autocorrelation_m($data, 1, 10, $mean) == .7, 'autocorrelation with mean';
+}
+
+subtest 'covariance' => {
+  my CArray[int8] $data1 .= new: ^10;
+  my num64 $mean1 = gsl_stats_char_mean($data1, 1, 10);
+  my CArray[int8] $data2 .= new: ^10;
+  $data2[3] = 4;
+  my num64 $mean2 = gsl_stats_char_mean($data2, 1, 10);
+  ok gsl_stats_char_covariance($data1, 1, $data2, 1, 10) == 9, 'covariance';
+  ok gsl_stats_char_covariance_m($data1, 1, $data2, 1, 10, $mean1, $mean2) == 9, 'covariance with mean';
+}
+
+subtest 'correlation' => {
+  my CArray[int8] $data1 .= new: ^10;
+  my CArray[int8] $data2 .= new: ^10;
+  $data2[3] = 4;
+  my $work = CArray[num64].allocate(20);
+  is-approx gsl_stats_char_correlation($data1, 1, $data2, 1, 10), 0.9945577827230723, :rel-tol(10⁻¹²), 'Pearson correlation';
+  is-approx gsl_stats_char_spearman($data1, 1, $data2, 1, 10, $work), 0.9969650916353059, :rel-tol(10⁻¹²), 'Spearman rank correlation';
+}
+
+subtest 'maximum and minimum values' => {
+  my CArray[int8] $data .= new: ^10;
+  my int8 ($min, $max);
+  my size_t ($min-index, $max-index);
+
+  ok gsl_stats_char_max($data, 1, 10) == 9, 'max';
+  ok gsl_stats_char_min($data, 1, 10) == 0, 'min';
+  gsl_stats_char_minmax($min, $max, $data, 1, 10);
+  ok $min == 0 && $max == 9, 'minmax';
+  ok gsl_stats_char_max_index($data, 1, 10) == 9, 'index of max element';
+  ok gsl_stats_char_min_index($data, 1, 10) == 0, 'index of min element';
+  gsl_stats_char_minmax_index($min-index, $max-index, $data, 1, 10);
+  ok $min-index == 0 && $max-index == 9, 'index of minmax elements';
+}
+
+subtest 'median and percentiles' => {
+  my CArray[int8] $data .= new: ^10;
+  ok gsl_stats_char_median_from_sorted_data($data, 1, 10) == 4.5, 'median from sorted data';
+  ok gsl_stats_char_median($data, 1, 10) == 4.5, 'median';
+  ok gsl_stats_char_quantile_from_sorted_data($data, 1, 10, .2e0) == 1.8, 'quantile from sorted data';
+}
+
+subtest 'order statistics' => {
+  my CArray[int8] $data .= new: ^10;
+  ok gsl_stats_char_select($data, 1, 10, 3) == 3, 'k-th smallest element';
+}
+
+subtest 'robust location estimates' => {
+  my CArray[int8] $data .= new: ^10;
+  ok gsl_stats_char_trmean_from_sorted_data(.2e0, $data, 1, 10) == 4.5, 'trimmed mean of sorted data';
+  ok gsl_stats_char_gastwirth_from_sorted_data($data, 1, 10) == 4.5, 'Gastwirth location estimator of sorted data';
+}
+
+subtest 'robust scale estimates' => {
+  my CArray[int8] $data .= new: ^10;
+  my $work = CArray[num64].allocate(20);
+  my $wwork = CArray[int8].allocate(30);
+  my $work-int = CArray[int32].allocate(50);
+  ok gsl_stats_char_mad0($data, 1, 10, $work) == 2.5, 'median absolute deviation without bias correction';
+  is-approx gsl_stats_char_mad($data, 1, 10, $work), 3.706505546264005, :rel-tol(10⁻¹²), 'median absolute deviation with bias correction';
+  ok gsl_stats_char_Sn0_from_sorted_data($data, 1, 10, $work) == 3, 'Sₙ statistic without bias correction';
+  ok gsl_stats_char_Sn0_from_sorted_data($data, 1, 10, $work) == 3, 'Sₙ statistic with bias correction';
+  ok gsl_stats_char_Qn0_from_sorted_data($data, 1, 10, $wwork, $work-int) == 2, 'Qₙ statistic without bias correction';
+  ok gsl_stats_char_Qn0_from_sorted_data($data, 1, 10, $wwork, $work-int) == 2, 'Qₙ statistic with bias correction';
+}
+
+done-testing;

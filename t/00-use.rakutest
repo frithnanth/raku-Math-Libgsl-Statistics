@@ -1,0 +1,27 @@
+#!/usr/bin/env raku
+
+use Test;
+use lib 'lib';
+
+use-ok 'Math::Libgsl::Raw::Statistics';
+use-ok 'Math::Libgsl::Raw::Statistics::Int8';
+use-ok 'Math::Libgsl::Raw::Statistics::Int16';
+use-ok 'Math::Libgsl::Raw::Statistics::Int32';
+use-ok 'Math::Libgsl::Raw::Statistics::Int64';
+use-ok 'Math::Libgsl::Raw::Statistics::UInt8';
+use-ok 'Math::Libgsl::Raw::Statistics::UInt16';
+use-ok 'Math::Libgsl::Raw::Statistics::UInt32';
+use-ok 'Math::Libgsl::Raw::Statistics::UInt64';
+use-ok 'Math::Libgsl::Raw::Statistics::Num32';
+use-ok 'Math::Libgsl::Statistics';
+use-ok 'Math::Libgsl::Statistics::Int8';
+use-ok 'Math::Libgsl::Statistics::Int16';
+use-ok 'Math::Libgsl::Statistics::Int32';
+use-ok 'Math::Libgsl::Statistics::Int64';
+use-ok 'Math::Libgsl::Statistics::UInt8';
+use-ok 'Math::Libgsl::Statistics::UInt16';
+use-ok 'Math::Libgsl::Statistics::UInt32';
+use-ok 'Math::Libgsl::Statistics::UInt64';
+use-ok 'Math::Libgsl::Statistics::Num32';
+
+done-testing;

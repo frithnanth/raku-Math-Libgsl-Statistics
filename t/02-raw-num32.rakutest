@@ -1,0 +1,136 @@
+#!/usr/bin/env perl6
+
+use Test;
+use NativeCall;
+use lib 'lib';
+use Math::Libgsl::Raw::Statistics::Num32 :ALL;
+
+subtest 'mean, standard deviation and variance' => {
+  my CArray[num32] $data .= new: (^10)».Num;
+  my num64 $mean = gsl_stats_float_mean($data, 1, 10);
+  ok $mean == 4.5, 'mean';
+  is-approx gsl_stats_float_variance($data, 1, 10), 9.166666666666668, :rel-tol(10⁻¹²), 'variance';
+  is-approx gsl_stats_float_variance_m($data, 1, 10, $mean), 9.166666666666668, :rel-tol(10⁻¹²), 'variance with mean';
+  is-approx gsl_stats_float_sd($data, 1, 10), 3.0276503540974917, :rel-tol(10⁻¹²), 'standard deviation';
+  is-approx gsl_stats_float_sd_m($data, 1, 10, $mean), 3.0276503540974917, :rel-tol(10⁻¹²), 'standard deviation with mean';
+  ok gsl_stats_float_tss($data, 1, 10) == 82.5, 'total sum of squares';
+  ok gsl_stats_float_tss_m($data, 1, 10, $mean) == 82.5, 'total sum of squares with mean';
+  ok gsl_stats_float_variance_with_fixed_mean($data, 1, 10, $mean) == 8.25, 'unbiased estimate of the variance';
+  is-approx gsl_stats_float_sd_with_fixed_mean($data, 1, 10, $mean), 2.8722813232690143, :rel-tol(10⁻¹²), 'standard deviationfor a fixed population mean';
+}
+
+subtest 'absolute deviation' => {
+  my CArray[num32] $data .= new: (^10)».Num;
+  my num64 $mean = gsl_stats_float_mean($data, 1, 10);
+  ok gsl_stats_float_absdev($data, 1, 10) == 2.5, 'absolute deviation from the mean';
+  ok gsl_stats_float_absdev_m($data, 1, 10, $mean) == 2.5, 'absolute deviation relative to the given mean';
+}
+
+subtest 'higher moments' => {
+  my CArray[num32] $data .= new: (^10)».Num;
+  my num64 $mean = gsl_stats_float_mean($data, 1, 10);
+  my num64 $sd   = gsl_stats_float_sd($data, 1, 10);
+  is-approx gsl_stats_float_skew($data, 1, 10), 5.421010862427522e-20, :rel-tol(10⁻¹²), 'skew';
+  is-approx gsl_stats_float_skew_m_sd($data, 1, 10, $mean, $sd), 5.421010862427522e-20, :rel-tol(10⁻¹²), 'skew with mean and sd';
+  is-approx gsl_stats_float_kurtosis($data, 1, 10), -1.561636363636364, :rel-tol(10⁻¹²), 'kurtosis';
+  is-approx gsl_stats_float_kurtosis_m_sd($data, 1, 10, $mean, $sd), -1.561636363636364, :rel-tol(10⁻¹²), 'kurtosis with mean and sd';
+}
+
+subtest 'autocorrelation' => {
+  my CArray[num32] $data .= new: (^10)».Num;
+  my num64 $mean = gsl_stats_float_mean($data, 1, 10);
+  ok gsl_stats_float_lag1_autocorrelation($data, 1, 10) == .7, 'autocorrelation';
+  ok gsl_stats_float_lag1_autocorrelation_m($data, 1, 10, $mean) == .7, 'autocorrelation with mean';
+}
+
+subtest 'covariance' => {
+  my CArray[num32] $data1 .= new: (^10)».Num;
+  my num64 $mean1 = gsl_stats_float_mean($data1, 1, 10);
+  my CArray[num32] $data2 .= new: (^10)».Num;
+  $data2[3] = 4e0;
+  my num64 $mean2 = gsl_stats_float_mean($data2, 1, 10);
+  ok gsl_stats_float_covariance($data1, 1, $data2, 1, 10) == 9, 'covariance';
+  ok gsl_stats_float_covariance_m($data1, 1, $data2, 1, 10, $mean1, $mean2) == 9, 'covariance with mean';
+}
+
+subtest 'correlation' => {
+  my CArray[num32] $data1 .= new: (^10)».Num;
+  my CArray[num32] $data2 .= new: (^10)».Num;
+  $data2[3] = 4e0;
+  my $work = CArray[num64].allocate(20);
+  is-approx gsl_stats_float_correlation($data1, 1, $data2, 1, 10), 0.9945577827230723, :rel-tol(10⁻¹²), 'Pearson correlation';
+  is-approx gsl_stats_float_spearman($data1, 1, $data2, 1, 10, $work), 0.9969650916353059, :rel-tol(10⁻¹²), 'Spearman rank correlation';
+}
+
+subtest 'weighted samples' => {
+  my @weights = .0000, .0000, .0000, 3.000, .0000, 1.000, 1.000, 1.000, 0.000, .5000, 7.000, 5.000, 4.000, 0.123;
+  my CArray[num32] $weights .= new: @weights».Num;
+  my @data = .0421, .0941, .1064, .0242, .1331, .0773, .0243, .0815, .1186, .0356, .0728, .0999, .0614, .0479;
+  my CArray[num32] $data .= new: @data».Num;
+
+  my num64 $wmean = gsl_stats_float_wmean($weights, 1, $data, 1, @weights.elems);
+  is-approx $wmean, 0.06781115236706008, :rel-tol(10⁻⁶), 'weighted mean';
+  is-approx gsl_stats_float_wvariance($weights, 1, $data, 1, @data.elems), 0.0007695629628603172, :rel-tol(10⁻⁶), 'weighted variance';
+  is-approx gsl_stats_float_wvariance_m($weights, 1, $data, 1, @data.elems, $wmean), 0.0007695629749029831, :rel-tol(10⁻⁶), 'weighted variance with mean';
+  my num64 $wsd = gsl_stats_float_wsd($weights, 1, $data, 1, @data.elems);
+  is-approx $wsd, 0.02774099787066639, :rel-tol(10⁻⁶), 'weighted standard deviation';
+  is-approx gsl_stats_float_wsd_m($weights, 1, $data, 1, @data.elems, $wmean), 0.027740998087721774, :rel-tol(10⁻⁶), 'weighted standard deviation with mean';
+  is-approx gsl_stats_float_wvariance_with_fixed_mean($weights, 1, $data, 1, @data.elems, $wmean), 0.0006157930608786541, :rel-tol(10⁻⁶), 'weighted unbiased estimate of variance';
+  is-approx gsl_stats_float_wsd_with_fixed_mean($weights, 1, $data, 1, @data.elems, $wmean), 0.024815178034393672, :rel-tol(10⁻⁶), 'weighted unbiased estimate of standard deviation';
+  is-approx gsl_stats_float_wtss($weights, 1, $data, 1, @data.elems), 0.013931086416257791, :rel-tol(10⁻⁶), 'weighted total sum of squares';
+  is-approx gsl_stats_float_wtss_m($weights, 1, $data, 1, @data.elems, $wmean), 0.013931086416257791, :rel-tol(10⁻⁶), 'weighted total sum of squares with mean';
+  is-approx gsl_stats_float_wabsdev($weights, 1, $data, 1, @data.elems), 0.01932050275040083, :rel-tol(10⁻⁶), 'weighted absolute deviation';
+  is-approx gsl_stats_float_wabsdev_m($weights, 1, $data, 1, @data.elems, $wmean), 0.01932050275040083, :rel-tol(10⁻⁶), 'weighted absolute deviation with mean';
+  is-approx gsl_stats_float_wskew($weights, 1, $data, 1, @data.elems), -0.3736310003070757, :rel-tol(10⁻⁶), 'weighted skew';
+  is-approx gsl_stats_float_wskew_m_sd($weights, 1, $data, 1, @data.elems, $wmean, $wsd), -0.3736310003070757, :rel-tol(10⁻⁶), 'weighted skew with mean and standard deviation';
+  is-approx gsl_stats_float_wkurtosis($weights, 1, $data, 1, @data.elems), -1.4811423335396314, :rel-tol(10⁻⁶), 'weighted kurtosis';
+  is-approx gsl_stats_float_wkurtosis_m_sd($weights, 1, $data, 1, @data.elems, $wmean, $wsd), -1.4811423335396314, :rel-tol(10⁻⁶), 'weighted kurtosis with mean and standard deviation';
+}
+
+subtest 'maximum and minimum values' => {
+  my CArray[num32] $data .= new: (^10)».Num;
+  my num32 ($min, $max);
+  my size_t ($min-index, $max-index);
+
+  ok gsl_stats_float_max($data, 1, 10) == 9, 'max';
+  ok gsl_stats_float_min($data, 1, 10) == 0, 'min';
+  gsl_stats_float_minmax($min, $max, $data, 1, 10);
+  ok $min == 0 && $max == 9, 'minmax';
+  ok gsl_stats_float_max_index($data, 1, 10) == 9, 'index of max element';
+  ok gsl_stats_float_min_index($data, 1, 10) == 0, 'index of min element';
+  gsl_stats_float_minmax_index($min-index, $max-index, $data, 1, 10);
+  ok $min-index == 0 && $max-index == 9, 'index of minmax elements';
+}
+
+subtest 'median and percentiles' => {
+  my CArray[num32] $data .= new: (^10)».Num;
+  ok gsl_stats_float_median_from_sorted_data($data, 1, 10) == 4.5, 'median from sorted data';
+  ok gsl_stats_float_median($data, 1, 10) == 4.5, 'median';
+  ok gsl_stats_float_quantile_from_sorted_data($data, 1, 10, .2e0) == 1.8, 'quantile from sorted data';
+}
+
+subtest 'order statistics' => {
+  my CArray[num32] $data .= new: (^10)».Num;
+  ok gsl_stats_float_select($data, 1, 10, 3) == 3, 'k-th smallest element';
+}
+
+subtest 'robust location estimates' => {
+  my CArray[num32] $data .= new: (^10)».Num;
+  ok gsl_stats_float_trmean_from_sorted_data(.2e0, $data, 1, 10) == 4.5, 'trimmed mean of sorted data';
+  ok gsl_stats_float_gastwirth_from_sorted_data($data, 1, 10) == 4.5, 'Gastwirth location estimator of sorted data';
+}
+
+subtest 'robust scale estimates' => {
+  my CArray[num32] $data .= new: (^10)».Num;
+  my $work = CArray[num64].allocate(20);
+  my $wwork = CArray[num32].allocate(30);
+  my $work-int = CArray[int32].allocate(50);
+  ok gsl_stats_float_mad0($data, 1, 10, $work) == 2.5, 'median absolute deviation without bias correction';
+  is-approx gsl_stats_float_mad($data, 1, 10, $work), 3.706505546264005, :rel-tol(10⁻¹²), 'median absolute deviation with bias correction';
+  ok gsl_stats_float_Sn0_from_sorted_data($data, 1, 10, $work) == 3, 'Sₙ statistic without bias correction';
+  ok gsl_stats_float_Sn0_from_sorted_data($data, 1, 10, $work) == 3, 'Sₙ statistic with bias correction';
+  ok gsl_stats_float_Qn0_from_sorted_data($data, 1, 10, $wwork, $work-int) == 2, 'Qₙ statistic without bias correction';
+  ok gsl_stats_float_Qn0_from_sorted_data($data, 1, 10, $wwork, $work-int) == 2, 'Qₙ statistic with bias correction';
+}
+
+done-testing;
