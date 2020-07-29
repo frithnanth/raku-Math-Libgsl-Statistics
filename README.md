@@ -1,6 +1,5 @@
 [![Build Status](https://travis-ci.org/frithnanth/raku-Math-Libgsl-Statistics.svg?branch=master)](https://travis-ci.org/frithnanth/raku-Math-Libgsl-Statistics)
-
-![Build Status](https://github.com/frithnanth/raku-Math-Libgsl-Statistics/workflows/test/badge.svg)
+[![Actions Status](https://github.com/frithnanth/raku-Math-Libgsl-Statistics/workflows/test/badge.svg)](https://github.com/frithnanth/raku-Math-Libgsl-Statistics/actions)
 
 NAME
 ====
