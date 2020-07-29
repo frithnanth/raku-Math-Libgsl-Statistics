@@ -51,7 +51,6 @@ subtest 'covariance' => {
   my $mean2 = mean(@data2);
   ok covariance(@data1, @data2) == 9, 'covariance';
   ok covariance(@data1, @data2, :9n) == 7.375, 'covariance with limited length';
-  is-approx covariance(@data1, @data2, :9n, :2stride1, :2stride2), 9.444444444444445, :rel-tol(10⁻⁶), 'covariance with stride';
   @data2[10] = 10;
   throws-like { covariance(@data1, @data2) }, X::TypeCheck::Binding::Parameter, 'arrays of different length';
   @data2.pop;
