@@ -23,7 +23,11 @@ jobs:
         with:
           raku-version: ${{ matrix.raku-version }}
       - name: Install libgsl
-        run: sudo apt install libgslcblas0 libgsl23 libgsl-dev
+        run: |
+          wget 'http://http.us.debian.org/debian/pool/main/g/gsl/libgslcblas0_2.5+dfsg-6_amd64.deb'
+          wget 'http://http.us.debian.org/debian/pool/main/g/gsl/libgsl23_2.5+dfsg-6_amd64.deb'
+          wget 'http://http.us.debian.org/debian/pool/main/g/gsl/libgsl-dev_2.5+dfsg-6_amd64.deb'
+          sudo dpkg -i libgslcblas0_2.5+dfsg-6_amd64.deb libgsl23_2.5+dfsg-6_amd64.deb libgsl-dev_2.5+dfsg-6_amd64.deb
       - name: Install Dependencies
         run: |
           zef install --/test --deps-only .
