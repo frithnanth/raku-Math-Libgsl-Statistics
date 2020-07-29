@@ -432,7 +432,7 @@ The functions in this module come in 10 data types:
 =item Math::Libgsl::Statistics::UInt32
 =item Math::Libgsl::Statistics::UInt64
 
-All the following functions are available for the classes correspondig to each datatype, except where noted.
+All the following functions are available in the modules correspondiing to each datatype, except where noted.
 
 =head3 mean(@data!, Int() :$stride? = 1, Int() :$n? = (@data.elems / $stride).Int --> Num)
 
