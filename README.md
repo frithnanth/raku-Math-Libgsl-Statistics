@@ -1,4 +1,3 @@
--[![Build Status](https://travis-ci.org/frithnanth/raku-Math-Libgsl-Statistics.svg?branch=master)](https://travis-ci.org/frithnanth/raku-Math-Libgsl-Statistics)
 [![Actions Status](https://github.com/frithnanth/raku-Math-Libgsl-Statistics/workflows/test/badge.svg)](https://github.com/frithnanth/raku-Math-Libgsl-Statistics/actions)
 
 NAME
@@ -9,7 +8,7 @@ Math::Libgsl::Statistics - An interface to libgsl, the Gnu Scientific Library - 
 SYNOPSIS
 ========
 
-```perl6
+```raku
 use Math::Libgsl::Statistics;
 
 my @data = ^10;
@@ -265,8 +264,8 @@ Prerequisites
 
 This module requires the libgsl library to be installed. Please follow the instructions below based on your platform:
 
-Debian Linux and Ubuntu 20.04
------------------------------
+Debian Linux and Ubuntu 20.04+
+------------------------------
 
     sudo apt install libgsl23 libgsl-dev libgslcblas0
 

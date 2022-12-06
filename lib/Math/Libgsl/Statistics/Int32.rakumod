@@ -1,6 +1,6 @@
 use v6.c;
 
-unit class Math::Libgsl::Statistics::Int32:ver<0.0.1>:auth<cpan:FRITH>;
+unit class Math::Libgsl::Statistics::Int32:ver<0.0.1>:auth<zef:FRITH>;
 
 use NativeCall;
 use Math::Libgsl::Raw::Statistics::Int32 :ALL;
