@@ -1,6 +1,6 @@
 use v6.c;
 
-unit class Math::Libgsl::Statistics::UInt16:ver<0.0.1>:auth<zef:FRITH>;
+unit class Math::Libgsl::Statistics::UInt16:ver<0.0.2>:auth<zef:FRITH>;
 
 use NativeCall;
 use Math::Libgsl::Raw::Statistics::UInt16 :ALL;

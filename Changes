@@ -1,6 +1,8 @@
 Revision history for Math-Libgsl-Statistics
 
 {{$NEXT}}
+
+0.0.2  2022-12-06T11:04:39+01:00
     - Use zef ecosystem
 
 0.0.1  2020-07-29T17:58:17+02:00
